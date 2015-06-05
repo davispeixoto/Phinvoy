@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="demo" default="main">
+	<!--------------------------->
+	<!-------- File sets -------->
+	<!--------------------------->
 	<fileset dir="./css" id="files.css">
         <include name="*.css" />
     </fileset>
@@ -13,7 +16,17 @@
 		<include name="*.png"/>
 		<include name="*.gif"/>
 	</fileset>
-
+	
+	<fileset dir="./images" id="files.images.jpeg">
+		<include name="*.jpeg"/>
+		<include name="*.jpg"/>
+	</fileset>
+	
+	<!--------------------------->
+	<!-- Common build routines -->
+	<!--------------------------->
+	<target name="main" depends="load.properties, prepare, css.minify.loop"></target>
+	
 	<target name="build">
 		<echo msg="Building" />
 	</target>
@@ -27,6 +40,9 @@
 		<mkdir dir="${build.dir}" />
 	</target>
 	
+	<!--------------------------->
+	<!--- CSS Minify Routines --->
+	<!--------------------------->
 	<target name="css.minify.loop">
 		<mkdir dir="${build.dir}/css" />
 		<copy todir="${build/dir}/css">
@@ -44,6 +60,9 @@
 		<exec command="java -jar yuicompressor.jar ${absfilename} -o ${absfilename}" />
 	</target>
 	
+	<!--------------------------->
+	<!---- JS Minify Routines --->
+	<!--------------------------->
 	<target name="js.minify.loop">
 		<mkdir dir="${build.dir}/js" />
 		<copy todir="${build.dir}/js">
@@ -61,23 +80,6 @@
 		<exec command="java -jar ~/yuicompressor.jar ${absfilename} -o ${absfilename}" />
 	</target>
 	
-	<target name="images.optimize.loop" depends="prepare">
-		<echo msg="Looping through images" />
-		<mkdir dir="${build.dir}/images" />
-		<copy todir="${build.dir}/images">
-			<fileset refid="files.images" />
-		</copy>
-		<foreach param="filename" absparam="absfilename" target="images.optimize">
-			<fileset dir="${build.dir}/images">
-				<include name="*"/>
-			</fileset>
-		</foreach>
-	</target>
-	<target name="images.optimize">
-		<echo msg="Optimizing pngs and gifs" />
-		<exec command="optipng -o7 ${absfilename}" />
-	</target>
-	
 	<target name="js.concatenate" depends="js.minify">
 		<echo msg="Concatenate js" />
 		<delete file="${build.dir}/js/allinone.js" />
@@ -92,5 +94,61 @@
 		</append>
 	</target>
 	
-	<target name="main" depends="load.properties, prepare, css.minify.loop"></target>
+	<!----------------------------------->
+	<!--- Images Compression Routines --->
+	<!----------------------------------->
+	<target name="images.optimize.loop" depends="prepare">
+		<echo msg="Looping through images" />
+		<mkdir dir="${build.dir}/images" />
+		<copy todir="${build.dir}/images">
+			<fileset refid="files.images" />
+		</copy>
+		<foreach param="filename" absparam="absfilename" target="images.optimize">
+			<fileset dir="${build.dir}/images">
+				<include name="*"/>
+			</fileset>
+		</foreach>
+	</target>
+	
+	<target name="images.optimize">
+		<echo msg="Optimizing pngs and gifs" />
+		<exec command="optipng -o7 ${absfilename}" />
+	</target>
+	
+	<target name="imagesjpg.optimize.loop" depends="prepare">
+		<echo msg="Looping through jpeg images" />
+		<mkdir dir="${build.dir}/images" />
+		<copy todir="${build.dir}/images">
+			<fileset refid="files.images.jpeg" />
+		</copy>
+		<foreach param="filename" absparam="absfilename" target="images.optimize.jpeg">
+			<fileset dir="${build.dir}/images">
+				<include name="*"/>
+			</fileset>
+		</foreach>
+	</target>
+	
+	<target name="images.optimize.jpeg">
+		<echo msg="Optimizing jpegs" />
+		<exec command="jpegtran -copy none -progressive -optimize -outfile ${absfilename} ${absfilename}" />
+	</target>
+	
+	<!----------------------------------->
+	<!-------- S3 Upload Routines ------->
+	<!----------------------------------->
+	<target name="upload.js">
+		<s3put source="${build.dir}/js/allinone.js" object="allinone.js" />
+	</target>
+	
+	<target name="upload.css">
+		<s3put source="${build.dir}/css/allinone.css" object="allinone.css" />
+	</target>
+	
+	<target name="upload.images">
+		<s3put>
+			<fileset dir="${build.dir}/images">
+				<include name="*"/>
+			</fileset>
+		</s3put>
+	</target>
 </project>

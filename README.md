@@ -3,10 +3,10 @@
 It's a build and deploy using [phing](https://www.phing.info/) and [envoy](https://github.com/laravel/envoy)
 
 Also starring:
-- YUI Compressor()
-- AWS SDK()
-- OptiPNG()
-- jpegtran()
+- [YUI Compressor](http://yui.github.io/yuicompressor/)
+- [AWS SDK](http://aws.amazon.com/pt/sdk-for-php/)
+- [OptiPNG](http://optipng.sourceforge.net/)
+- [jpegtran](http://jpegclub.org/jpegtran/)
 
 ## Installation
 
