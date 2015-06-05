@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="demo" default="main">
+	<fileset dir="./css" id="files.css">
+        <include name="*.css" />
+    </fileset>
+	
+	<fileset dir="./js" id="files.js">
+		<include name="*.js"/>
+	</fileset>
+	
+	<fileset dir="./images" id="files.images">
+		<include name="*.png"/>
+		<include name="*.gif"/>
+	</fileset>
+
+	<target name="build">
+		<echo msg="Building" />
+	</target>
+	
+	<target name="load.properties">
+		<property file="build.properties"/>
+	</target>
+	
+	<target name="prepare">
+		<echo msg="Making directory ${build.dir}" />
+		<mkdir dir="${build.dir}" />
+	</target>
+	
+	<target name="css.minify.loop">
+		<mkdir dir="${build.dir}/css" />
+		<copy todir="${build/dir}/css">
+			<fileset refid="files.css" />
+		</copy>
+		<foreach param="filename" absparam="absfilename" target="css.minify">
+			<fileset dir="${build.dir}/css">
+				<include name="*.css"/>
+			</fileset>
+		</foreach>
+	</target>
+	
+	<target name="css.minify">
+		<echo msg="Minimizing css" />
+		<exec command="java -jar yuicompressor.jar ${absfilename} -o ${absfilename}" />
+	</target>
+	
+	<target name="js.minify.loop">
+		<mkdir dir="${build.dir}/js" />
+		<copy todir="${build.dir}/js">
+			<fileset refid="files.js" />
+		</copy>
+		<foreach param="filename" absparam="absfilename" target="js.minify">
+			<fileset dir="${build.dir}/js">
+				<include name="*.js"/>
+			</fileset>
+		</foreach>
+	</target>
+	
+	<target name="js.minify">
+		<echo msg="Minifying js" />
+		<exec command="java -jar ~/yuicompressor.jar ${absfilename} -o ${absfilename}" />
+	</target>
+	
+	<target name="images.optimize.loop" depends="prepare">
+		<echo msg="Looping through images" />
+		<mkdir dir="${build.dir}/images" />
+		<copy todir="${build.dir}/images">
+			<fileset refid="files.images" />
+		</copy>
+		<foreach param="filename" absparam="absfilename" target="images.optimize">
+			<fileset dir="${build.dir}/images">
+				<include name="*"/>
+			</fileset>
+		</foreach>
+	</target>
+	<target name="images.optimize">
+		<echo msg="Optimizing pngs and gifs" />
+		<exec command="optipng -o7 ${absfilename}" />
+	</target>
+	
+	<target name="js.concatenate" depends="js.minify">
+		<echo msg="Concatenate js" />
+		<delete file="${build.dir}/js/allinone.js" />
+		<append destFile="${build.dir}/js/allinone.js">
+			<fileset dir="${build.dir}/js">
+				<include name="test.js"/>
+			</fileset>
+			<fileset dir="${build.dir}/js">
+				<include name="*.js"/>
+				<exclude name="test.js"/>
+			</fileset>
+		</append>
+	</target>
+	
+	<target name="main" depends="load.properties, prepare, css.minify.loop"></target>
+</project>
