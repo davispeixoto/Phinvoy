@@ -25,14 +25,15 @@
 	<!--------------------------->
 	<!-- Common build routines -->
 	<!--------------------------->
-	<target name="main" depends="load.properties, prepare, css.minify.loop"></target>
-	
-	<target name="build">
-		<echo msg="Building" />
+	<target name="main" depends="load.properties, prepare, css.concatenate, js.concatenate, images.optimize.loop, imagesjpeg.optimize.loop">
+		<phingcall target="upload.js" />
+		<phingcall target="upload.css" />
+		<phingcall target="upload.images" />
 	</target>
 	
 	<target name="load.properties">
-		<property file="build.properties"/>
+		<echo msg="Loading properties" />
+		<property file="build.properties" />
 	</target>
 	
 	<target name="prepare">
@@ -56,8 +57,18 @@
 	</target>
 	
 	<target name="css.minify">
-		<echo msg="Minimizing css" />
+		<echo msg="Minimizing css file: ${absfilename}" />
 		<exec command="java -jar yuicompressor.jar ${absfilename} -o ${absfilename}" />
+	</target>
+	
+	<target name="css.concatenate" depends="css.minify.loop">
+		<echo msg="Concatenate css" />
+		<delete file="${build.dir}/css/allinone.css" />
+		<append destFile="${build.dir}/css/allinone.css">
+			<fileset dir="${build.dir}/css">
+				<include name="*.css"/>
+			</fileset>
+		</append>
 	</target>
 	
 	<!--------------------------->
@@ -76,20 +87,16 @@
 	</target>
 	
 	<target name="js.minify">
-		<echo msg="Minifying js" />
+		<echo msg="Minifying js: ${absfilename}" />
 		<exec command="java -jar ~/yuicompressor.jar ${absfilename} -o ${absfilename}" />
 	</target>
 	
-	<target name="js.concatenate" depends="js.minify">
+	<target name="js.concatenate" depends="js.minify.loop">
 		<echo msg="Concatenate js" />
 		<delete file="${build.dir}/js/allinone.js" />
 		<append destFile="${build.dir}/js/allinone.js">
 			<fileset dir="${build.dir}/js">
-				<include name="test.js"/>
-			</fileset>
-			<fileset dir="${build.dir}/js">
 				<include name="*.js"/>
-				<exclude name="test.js"/>
 			</fileset>
 		</append>
 	</target>
@@ -111,11 +118,11 @@
 	</target>
 	
 	<target name="images.optimize">
-		<echo msg="Optimizing pngs and gifs" />
+		<echo msg="Optimizing image: ${absfilename}" />
 		<exec command="optipng -o7 ${absfilename}" />
 	</target>
 	
-	<target name="imagesjpg.optimize.loop" depends="prepare">
+	<target name="imagesjpeg.optimize.loop" depends="prepare">
 		<echo msg="Looping through jpeg images" />
 		<mkdir dir="${build.dir}/images" />
 		<copy todir="${build.dir}/images">
@@ -129,22 +136,22 @@
 	</target>
 	
 	<target name="images.optimize.jpeg">
-		<echo msg="Optimizing jpegs" />
+		<echo msg="Optimizing image: ${absfilename}" />
 		<exec command="jpegtran -copy none -progressive -optimize -outfile ${absfilename} ${absfilename}" />
 	</target>
 	
 	<!----------------------------------->
 	<!-------- S3 Upload Routines ------->
 	<!----------------------------------->
-	<target name="upload.js">
+	<target name="upload.js" depends="load.properties">
 		<s3put source="${build.dir}/js/allinone.js" object="allinone.js" />
 	</target>
 	
-	<target name="upload.css">
+	<target name="upload.css" depends="load.properties">
 		<s3put source="${build.dir}/css/allinone.css" object="allinone.css" />
 	</target>
 	
-	<target name="upload.images">
+	<target name="upload.images" depends="load.properties">
 		<s3put>
 			<fileset dir="${build.dir}/images">
 				<include name="*"/>
